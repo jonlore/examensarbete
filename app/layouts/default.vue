@@ -1,8 +1,10 @@
 <template>
-    <div>
-        <p>Default layout</p>
-        <main>
-            <slot />
-        </main>
-    </div>
+  <u-app>
+    <UDashboardGroup>
+      <UDashboardSidebar />
+      <main>
+        <slot />
+      </main>
+    </UDashboardGroup>
+  </u-app>
 </template>

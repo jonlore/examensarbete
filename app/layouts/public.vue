@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <u-app>
         <header>
             <p>Public layout header</p>
         </header>
@@ -9,5 +9,5 @@
         <footer>
             <p>Public layout footer</p>
         </footer>
-    </div>
+    </u-app>
 </template>
