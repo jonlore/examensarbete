@@ -1,156 +1,104 @@
 <script setup lang="ts">
+import type { NavigationMenuItem } from '@nuxt/ui'
+
 const router = useRouter()
+const client = useSupabaseClient()
+const user = useSupabaseUser()
 
-import type { DropdownMenuItem } from '@nuxt/ui'
+const logout = async () => {
+  await client.auth.signOut()
+  navigateTo('/login')
+}
 
-const items = ref<DropdownMenuItem[][]>([
-  [
-    {
-      label: 'Benjamin',
-      avatar: {
-        src: 'https://github.com/benjamincanac.png'
-      },
-      type: 'label'
-    }
-  ],
-  [
-    {
-      label: 'Profile',
-      icon: 'i-lucide-user'
-    },
-    {
-      label: 'Billing',
-      icon: 'i-lucide-credit-card'
-    },
-    {
-      label: 'Settings',
-      icon: 'i-lucide-cog',
-      kbds: [',']
-    },
-    {
-      label: 'Keyboard shortcuts',
-      icon: 'i-lucide-monitor'
-    }
-  ],
-  [
-    {
-      label: 'Team',
-      icon: 'i-lucide-users'
-    },
-    {
-      label: 'Invite users',
-      icon: 'i-lucide-user-plus',
-      children: [
-        [
-          {
-            label: 'Email',
-            icon: 'i-lucide-mail'
-          },
-          {
-            label: 'Message',
-            icon: 'i-lucide-message-square'
-          }
-        ],
-        [
-          {
-            label: 'More',
-            icon: 'i-lucide-circle-plus'
-          }
-        ]
-      ]
-    },
-    {
-      label: 'New team',
-      icon: 'i-lucide-plus',
-      kbds: ['meta', 'n']
-    }
-  ],
-  [
-    {
-      label: 'GitHub',
-      icon: 'i-simple-icons-github',
-      to: 'https://github.com/nuxt/ui',
-      target: '_blank'
-    },
-    {
-      label: 'Support',
-      icon: 'i-lucide-life-buoy',
-      to: '/docs/components/dropdown-menu'
-    },
-    {
-      label: 'API',
-      icon: 'i-lucide-cloud',
-      disabled: true
-    }
-  ],
-  [
-    {
-      label: 'Logout',
-      icon: 'i-lucide-log-out',
-      kbds: ['shift', 'meta', 'q']
-    }
-  ]
-])
+// Sidebar navigation items
+const items: NavigationMenuItem[][] = [[
+  {
+    label: 'Discover',
+    icon: 'i-lucide-compass',
+    to: '/explore',
+  },
+  {
+    label: 'My Trips',
+    icon: 'i-lucide-map',
+    to: '/trips'
+  },
+  {
+    label: 'Create Trip',
+    icon: 'i-lucide-plus-circle',
+    to: '/create-trip'
+  }
+]]
 </script>
 
 <template>
   <u-app>
-    <header class="flex items-center justify-between px-6 py-4 border-b border-gray-300 bg-white">
-      <div class="flex items-center gap-6">
-        <div class="flex items-center gap-2 cursor-pointer" @click="router.push('/')">
-          <span class="font-semibold text-lg">TripBoard</span>
-        </div>
+    <UDashboardGroup>
+      <!-- Sidebar -->
+      <UDashboardSidebar
+        v-if="user"
+        collapsible
+        resizable
+        :ui="{ footer: 'border-t border-default' }"
+      >
+        <!-- Header -->
+        <template #header="{ collapsed }">
+          <div
+            class="flex items-center gap-2 cursor-pointer"
+            @click="router.push('/')"
+          >
+            <Logo v-if="!collapsed" class="h-6 w-auto shrink-0" />
+            <UIcon
+              v-else
+              name="i-lucide-map"
+              class="size-5 text-primary mx-auto"
+            />
+            <span v-if="!collapsed" class="font-semibold text-lg">TripBoard</span>
+          </div>
+        </template>
 
-        <!-- Navigation Links -->
-        <NuxtLink to="/" class="text-sm font-medium text-gray-600 hover:text-gray-900">
-          Discover
-        </NuxtLink>
+        <!-- Sidebar Content -->
+        <template #default="{ collapsed }">
+          <UNavigationMenu
+            :collapsed="collapsed"
+            :items="items[0]"
+            orientation="vertical"
+            class="mt-4"
+          />
+        </template>
 
-      </div>
+        <!-- Footer -->
+        <template #footer="{ collapsed }">
+          <div class="flex flex-col items-center w-full gap-2">
+            <UButton
+              v-if="user"
+              icon="i-lucide-log-out"
+              :label="collapsed ? undefined : 'Logout'"
+              color="neutral"
+              variant="ghost"
+              class="w-full"
+              :block="collapsed"
+              @click="logout"
+            />
 
-      <!-- Center Section: Search Bar -->
-      <div class="w-full max-w-md px-4">
-        <UInput
-          placeholder="Search destinations..."
-          icon="i-lucide-search"
-          class="w-full"
-        />
-      </div>
+            <UButton
+              v-else
+              label="Login"
+              icon="i-lucide-log-in"
+              color="neutral"
+              variant="outline"
+              class="w-full"
+              @click="router.push('/login')"
+            />
+          </div>
+        </template>
+      </UDashboardSidebar>
 
-      <!-- Right Section: Actions -->
-      <div class="flex items-center gap-4">
-        <!-- Create Trip Button -->
-        <UButton
-          label="Create Trip"
-          color="primary"
-          icon="i-lucide-plus"
-          @click="router.push('/create-trip')"
-        />
-
-        <!-- My Trips Icon -->
-        <UButton
-          label="Saved Trips"
-          icon="i-lucide-map"
-          variant="ghost"
-          @click="router.push('/trips')"
-        />
-
-        <!-- Profile Dropdown -->
-        <UDropdownMenu
-          :items="items"
-          :ui="{
-            content: 'w-48'
-          }"
-        >
-          <UButton icon="i-lucide-user" color="neutral" variant="outline" />
-        </UDropdownMenu>
-
-      </div>
-    </header>
-
-    <!-- Page Content -->
-    <main>
-      <slot />
-    </main>
+      <!-- Main Content -->
+      <UDashboardPanel>
+        <main class="bg-gray-50 min-h-screen overflow-scroll">
+          <slot />
+        </main>
+      </UDashboardPanel>
+    </UDashboardGroup>
   </u-app>
 </template>

@@ -1,72 +1,100 @@
 <template>
-  <div class="p-6">
-    <h1 class="text-2xl font-bold mb-6">Saved Trips</h1>
+  <div class="p-6 bg-gray-50 min-h-screen">
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div
-        v-for="(trip, index) in trips"
+     <div class="flex justify-between items-center mb-8">
+      <div>
+        <h1 class="text-2xl font-semibold text-gray-800">Your Saved Trips</h1>
+        <p class="text-gray-500 text-sm">Explore your favorite adventures or create a new one</p>
+      </div>
+    </div>
+    <!-- Header -->
+    <div
+      class="flex justify-between items-center mb-6 border-2 border-dashed border-gray-300 rounded-2xl p-6 hover:border-blue-400 transition cursor-pointer bg-white"
+      @click="navigateTo('/create-trip')"
+    >
+      <div class="flex items-center gap-4">
+        <UIcon name="i-lucide-plus" class="text-blue-500 size-6" />
+        <div>
+          <h2 class="text-lg font-semibold text-gray-800">Create a New Trip</h2>
+          <p class="text-gray-500 text-sm">Share your own adventure with the community</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Saved Trips Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <TripCard
+        v-for="(trip, index) in savedTrips"
         :key="index"
-        class="bg-white rounded-lg shadow-md overflow-hidden flex flex-col"
+        :trip="trip"
+      />
+
+      <div
+        v-if="!savedTrips.length"
+        class="col-span-full text-center text-gray-500 py-12"
       >
-        <!-- Image -->
-        <img
-          :src="trip.image"
-          :alt="trip.title"
-          class="w-full h-40 object-cover"
-        />
-
-        <!-- Content -->
-        <div class="p-4 flex flex-col flex-grow">
-          <h3 class="text-lg font-semibold mb-2">{{ trip.title }}</h3>
-          <p class="text-gray-600 flex-grow">{{ trip.description }}</p>
-        </div>
-
-        <!-- Footer -->
-        <div
-          class="flex justify-between items-center px-4 py-3 border-t border-gray-200 text-sm text-gray-500"
-        >
-          <span>{{ trip.date }}</span>
-          <button
-            class="text-blue-600 hover:underline"
-            @click="navigateTo(trip.link)"
-          >
-            View
-          </button>
-        </div>
+        <p>You haven’t saved any trips yet.</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-const router = useRouter()
+import TripCard from '~/components/TripCard.vue'
+import { useSupabaseClient, useSupabaseUser } from '#imports'
 
-const navigateTo = (link: string) => {
-  router.push(link)
-}
+const supabase = useSupabaseClient()
+const user = useSupabaseUser()
 
-// Dummy saved trips – replace with real data when ready
-const trips = [
-  {
-    title: 'Iceland Adventure',
-    description: 'My epic journey around Iceland’s Ring Road.',
-    image: 'https://images.unsplash.com/photo-1542640244-7e672d6cef4e?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=2070',
-    date: 'Saved on Sep 14',
-    link: '/trips/iceland-adventure'
-  },
-  {
-    title: 'Bali Escape',
-    description: 'Surfing and sunsets in Canggu.',
-    image: 'https://images.unsplash.com/photo-1542640244-7e672d6cef4e?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=2070',
-    date: 'Saved on Sep 2',
-    link: '/trips/bali-escape'
-  },
-  {
-    title: 'Tuscany Wine Tour',
-    description: 'Vineyards, villas, and vino!',
-    image: 'https://images.unsplash.com/photo-1542640244-7e672d6cef4e?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=2070',
-    date: 'Saved on Aug 21',
-    link: '/trips/tuscany-wine'
+const { data: savedTrips } = await useAsyncData('saved-trips', async () => {
+  if (!user.value) return []
+
+  const userId = user.value.id || user.value.sub
+  const { data, error } = await supabase
+    .from('trip_saves')
+    .select(`
+      trip_id,
+      trips!trip_saves_trip_id_fkey (
+        id,
+        public_id,
+        title,
+        location,
+        themes,
+        saves_count,
+        owner_id,
+        created_at
+      )
+    `)
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching saved trips:', error)
+    return []
   }
-]
+
+  const trips =
+    data?.map((row: any) =>
+      row.trips
+        ? {
+            ...row.trips,
+            image: getCityImage(row.trips.location),
+            link: `/trip/${row.trips.public_id}`,
+            saved: true,
+            savesCount: row.trips.saves_count,
+          }
+        : null
+    ).filter(Boolean) ?? []
+
+  return trips
+}, { default: () => [] })
+
+function getCityImage(location: string): string {
+  const images: Record<string, string> = {
+    Japan: 'https://images.unsplash.com/photo-1542640244-7e672d6cef4e?auto=format&fit=crop&q=80&w=2070',
+    Indonesia: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=1966',
+    Iceland: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&q=80&w=1966',
+  }
+  return images[location] || 'https://via.placeholder.com/400x300?text=Trip'
+}
 </script>
