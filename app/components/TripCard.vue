@@ -5,7 +5,7 @@
     <!-- Image wrapper with overlayed save button -->
     <div class="relative">
       <img
-        :src="trip.image"
+        :src="image"
         :alt="trip.title"
         class="w-full h-44 object-cover"
       />
@@ -59,8 +59,10 @@
 </template>
 
 <script setup lang="ts">
+
 import { useRouter } from 'vue-router'
 import { useSupabaseClient, useSupabaseUser } from '#imports'
+import { getTripImage } from '~/utils/getTripImage'
 
 type Trip = {
   id: string
@@ -77,6 +79,8 @@ const props = defineProps<{ trip: Trip }>()
 const router = useRouter()
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
+
+const image = computed(() => getTripImage(props.trip.location, props.trip.themes))
 
 const navigateTo = (link: string) => {
   router.push(link)

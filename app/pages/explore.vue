@@ -90,7 +90,9 @@
 
 <script setup lang="ts">
 import TripCard from '~/components/TripCard.vue'
+import { getTripImage } from '~/utils/getTripImage'
 import { useSupabaseClient } from '#imports'
+
 
 type Trip = {
   id: string
@@ -119,15 +121,7 @@ const categories = ['All', 'Adventure', 'Relaxation', 'Culture', 'Food', 'Nature
 const showFilter = ref(false)
 const sortBy = ref('created_at.desc')
 
-// --- Helpers ---
-function getCityImage(location: string): string {
-  const images: Record<string, string> = {
-    Japan: 'https://images.unsplash.com/photo-1542640244-7e672d6cef4e?auto=format&fit=crop&q=80&w=2070',
-    Indonesia: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=1966',
-    Iceland: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&q=80&w=1966',
-  }
-  return images[location] || 'https://via.placeholder.com/400x300?text=Trip'
-}
+
 
 function debounce(fn: Function, delay = 400) {
   let timeout: number
@@ -173,7 +167,6 @@ async function loadTrips() {
   trips.value.push(
     ...data.map((trip: Trip) => ({
       ...trip,
-      image: getCityImage(trip.location),
       link: `/trip/${trip.public_id}`,
       savesCount: trip.saves_count,
     }))

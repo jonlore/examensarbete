@@ -151,8 +151,6 @@ import { ref, reactive, computed } from 'vue'
 import { LMap, LTileLayer, LMarker, LPopup } from '@vue-leaflet/vue-leaflet'
 
 
-
-// --- Predefined activity types (no free text)
 const activityTypes = [
   'Hiking',
   'Beach Visit',
@@ -258,10 +256,43 @@ const allMarkers = computed(() =>
   )
 )
 
+// --- Reverse Geocoding (to get city/state/country)
+async function reverseGeocode(lat: number, lng: number): Promise<{ city: string; country: string }> {
+  try {
+    const data: any = await $fetch('https://nominatim.openstreetmap.org/reverse', {
+      params: {
+        format: 'json',
+        lat,
+        lon: lng,
+        zoom: 10,
+        addressdetails: 1,
+      },
+    })
+
+    const addr = data.address || {}
+
+    return {
+      city:
+        addr.city ||
+        addr.town ||
+        addr.village ||
+        addr.state ||
+        addr.country ||
+        'Unknown Region',
+      country: addr.country || 'Unknown Country',
+    }
+  } catch (err) {
+    console.error('Reverse geocoding failed:', err)
+    return { city: 'Unknown Region', country: 'Unknown Country' }
+  }
+}
+
+
 // --- Submit
 async function onSubmit(event: FormSubmitEvent<Schema>) {
-  alert("Submitting trip...")
   const form = event.data
+
+  // Flatten activities
   const formattedActivities = form.activities.flatMap(day =>
     day.items.map(item => ({
       name: item.type,
@@ -270,10 +301,38 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     }))
   )
 
+  // Get unique themes (first activity type per day)
+  const themes = Array.from(
+    new Set(
+      form.activities.map(day => day.items[0]?.type).filter(Boolean)
+    )
+  )
+
+  // Determine trip location (city/state/country)
+  let locationCity = 'Unknown Region'
+  let locationCountry = 'Unknown Country'
+
+  const firstWithCoords = formattedActivities.find(a => a.lat && a.lng)
+  if (firstWithCoords) {
+    const result = await reverseGeocode(firstWithCoords.lat!, firstWithCoords.lng!)
+    locationCity = result.city
+    locationCountry = result.country
+  }
+
+  const mainTheme = themes[0] || ''
+  const totalDays = form.activities.length
+  const plural = totalDays > 1 ? 'Days' : 'Day'
+  let title = `${totalDays}-${plural} Trip to ${locationCity}`
+
+  if (mainTheme) {
+    title = `${totalDays}-${plural} ${mainTheme} Trip to ${locationCity}`
+  }
+
+  // Insert into Supabase
   const { error } = await supabase.from('trips').insert({
-    title: `Trip to region !`,
-    location: "Europe",
-    themes: ["Museum", "culture"],
+    title: title,
+    location: locationCountry,
+    themes,
     activities: formattedActivities,
     saved: true,
     saves_count: 1,
@@ -290,7 +349,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   } else {
     toast.add({
       title: 'Trip Created!',
-      description: `Your trip in ${form.region} has been saved.`,
+      description: `Your trip has been saved.`,
       color: 'primary',
     })
     state.region = ''
@@ -299,8 +358,4 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 }
 </script>
 
-<style scoped>
-.leaflet-container {
-  border-radius: 0.75rem;
-}
-</style>
+

@@ -78,7 +78,6 @@ const { data: savedTrips } = await useAsyncData('saved-trips', async () => {
       row.trips
         ? {
             ...row.trips,
-            image: getCityImage(row.trips.location),
             link: `/trip/${row.trips.public_id}`,
             saved: true,
             savesCount: row.trips.saves_count,
@@ -88,13 +87,4 @@ const { data: savedTrips } = await useAsyncData('saved-trips', async () => {
 
   return trips
 }, { default: () => [] })
-
-function getCityImage(location: string): string {
-  const images: Record<string, string> = {
-    Japan: 'https://images.unsplash.com/photo-1542640244-7e672d6cef4e?auto=format&fit=crop&q=80&w=2070',
-    Indonesia: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=1966',
-    Iceland: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&q=80&w=1966',
-  }
-  return images[location] || 'https://via.placeholder.com/400x300?text=Trip'
-}
 </script>
