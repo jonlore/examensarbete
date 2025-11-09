@@ -1,67 +1,86 @@
 <template>
   <div
-    class="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col transition duration-200"
+    class="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col transition duration-200 hover:shadow-lg hover:-translate-y-1"
   >
-    <!-- Image wrapper with overlayed save button -->
+    <!-- Image wrapper -->
     <div class="relative">
       <img
         :src="image"
         :alt="trip.title"
-        class="w-full h-44 object-cover"
+        class="w-full h-48 object-cover"
       />
 
-      <!-- Save button & count -->
-      <button
-        @click.stop="toggleSave"
-        class="absolute top-2 right-2 bg-white/80 hover:bg-white rounded-full flex items-center gap-1 px-2 py-1 shadow-sm transition text-gray-700 hover:text-blue-500"
+      <!-- Location Badge (top-left) -->
+      <div
+        class="absolute top-2 left-2 bg-white/90 backdrop-blur-xs px-2 py-1 rounded-full flex items-center gap-1 shadow-sm text-gray-700 text-xs font-medium"
       >
-        <UIcon
-          :name="trip.saved ? 'i-lucide-bookmark' : 'i-lucide-bookmark-plus'"
-          class="w-5 h-5"
-        />
-        <span class="text-xs font-medium">{{ trip.savesCount }}</span>
-      </button>
-    </div>
-
-    <!-- Content -->
-    <div class="p-4 flex flex-col flex-grow">
-      <!-- Location -->
-      <div class="flex items-center text-gray-500 text-sm mb-1">
-        <UIcon name="i-lucide-map-pin" class="w-4 h-4 mr-1" />
+        <UIcon name="i-lucide-map-pin" class="w-4 h-4 text-primary" />
         <span>{{ trip.location }}</span>
       </div>
 
-      <!-- Title -->
-      <h3 class="text-base font-semibold mb-2 text-gray-800">
-        {{ trip.title }}
-      </h3>
+      <!-- Save button (top-right) -->
+      <button
+        @click.stop="toggleSave"
+        class="absolute top-2 right-2 bg-white/90 backdrop-blur-xs hover:bg-white rounded-full flex items-center px-2 py-1 shadow-sm transition text-gray-700 hover:text-blue-500"
+      >
+        <UIcon
+          :name="trip.saved ? 'i-lucide-bookmark-x' : 'i-lucide-bookmark-check'"
+          class="w-5 h-5 "
+        />
+        <span class="text-xs font-medium ml-1">{{ trip.savesCount }}</span>
+      </button>
 
-      <!-- Themes -->
-      <div class="flex flex-wrap gap-1.5 mb-4">
+      <!-- Themes Badge (bottom) -->
+      <div
+        class="absolute bottom-2 left-2 flex flex-wrap gap-1"
+      >
         <span
           v-for="(theme, index) in trip.themes"
           :key="index"
-          class="bg-gray-100 text-gray-700 text-xs font-medium px-2 py-0.5 rounded-full"
+          class="bg-primary text-white text-xs px-2 py-0.5 rounded-full shadow-sm"
         >
           {{ theme }}
         </span>
       </div>
+    </div>
 
-      <!-- Explore button -->
-      <UButton
-        @click="navigateTo(trip.link)"
-        class="cursor-pointer mt-auto inline-flex justify-center items-center text-white text-sm font-medium px-3 py-1.5 rounded-lgtransition"
-      >
-        Explore Trip
-      </UButton>
+    <!-- Card Content -->
+    <div class="p-4 flex flex-col flex-grow">
+      <!-- Title -->
+      <h3 class="text-base font-semibold mb-2 text-gray-800 line-clamp-2">
+        {{ trip.title }}
+      </h3>
+
+      <!-- Explore Button -->
+      <div class="mt-auto flex justify-between items-center gap-2">
+        <UButton
+          @click="navigateTo(trip.link)"
+          color="primary"
+          variant="solid"
+          size="sm"
+        >
+          Explore Trip
+        </UButton>
+
+        <!-- Delete button (only owner) -->
+        <UButton
+          v-if="isOwner"
+          color="primary"
+          variant="outline"
+          size="sm"
+          icon="i-lucide-trash"
+          class="rounded-full"
+          @click.stop="deleteTrip"
+        />
+      </div>
     </div>
   </div>
 </template>
 
-<script setup lang="ts">
 
+<script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { useSupabaseClient, useSupabaseUser } from '#imports'
+import { useSupabaseClient, useSupabaseUser, useToast } from '#imports'
 import { getTripImage } from '~/utils/getTripImage'
 
 type Trip = {
@@ -73,14 +92,23 @@ type Trip = {
   themes: string[]
   saved: boolean
   savesCount: number
+  owner_id?: string
 }
 
 const props = defineProps<{ trip: Trip }>()
+const emit = defineEmits(['deleted']) // 👈 emit when deleted
+
 const router = useRouter()
 const supabase = useSupabaseClient()
 const user = useSupabaseUser()
+const toast = useToast()
 
 const image = computed(() => getTripImage(props.trip.location, props.trip.themes))
+
+const isOwner = computed(() => {
+  const userId = user.value?.id || user.value?.sub
+  return props.trip.owner_id === userId
+})
 
 const navigateTo = (link: string) => {
   router.push(link)
@@ -88,7 +116,7 @@ const navigateTo = (link: string) => {
 
 const toggleSave = async () => {
   if (!user.value) {
-    alert('Please log in to save trips.')
+    toast.add({ title: 'Please log in to save trips.', color: 'primary' })
     return
   }
 
@@ -103,6 +131,7 @@ const toggleSave = async () => {
 
     if (error) {
       console.error('Error unsaving trip:', error)
+      toast.add({ title: 'Error removing trip.', color: 'primary' })
       return
     }
 
@@ -111,18 +140,43 @@ const toggleSave = async () => {
   } else {
     const { error } = await supabase
       .from('trip_saves')
-      .insert({
-        trip_id: tripId,
-        user_id: user.value.sub,
-      } as any)
+      .insert({ trip_id: tripId, user_id: user.value.sub } as any)
 
     if (error) {
       console.error('Error saving trip:', error)
+      toast.add({ title: 'Error saving trip.', color: 'primary' })
       return
     }
 
     props.trip.saved = true
     props.trip.savesCount += 1
+  }
+}
+
+
+async function deleteTrip() {
+  if (!isOwner.value) return
+
+  const confirmed = confirm('Are you sure you want to delete this trip permanently?')
+  if (!confirmed) return
+
+
+  const { error } = await supabase.from('trips').delete().eq('id', props.trip.id)
+
+  if (error) {
+    console.error('Error deleting trip:', error)
+    toast.add({
+      title: 'Failed to delete trip',
+      description: error.message,
+      color: 'primary',
+    })
+  } else {
+    toast.add({
+      title: 'Trip deleted',
+      description: 'Your trip has been permanently removed.',
+      color: 'primary',
+    })
+    router.go(0) // Refresh the page
   }
 }
 </script>

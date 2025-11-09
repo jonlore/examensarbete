@@ -10,7 +10,10 @@
         class="space-y-6 p-6"
         @submit="onSubmit"
       >
-        <h2 class="text-2xl font-bold mb-4">Create a Trip</h2>
+      <h2 class="text-2xl font-bold mb-4">
+        {{ isEditMode ? 'Edit Trip' : isRemixMode ? 'Remix Trip' : 'Create a Trip' }}
+      </h2>
+
 
         <!-- Activities per Day -->
         <div class="space-y-6">
@@ -34,37 +37,59 @@
             </div>
 
             <!-- Day Activities -->
-            <div
-              v-for="(item, itemIndex) in day.items"
-              :key="itemIndex"
-              class="grid grid-cols-1 md:grid-cols-3 gap-2 items-center border border-gray-100 p-3 rounded-lg bg-white"
-            >
-              <USelectMenu
-                v-model="day.items[itemIndex]!.type"
-                :items="activityTypes"
-                placeholder="Select activity type"
+           <div
+            v-for="(item, itemIndex) in day.items"
+            :key="itemIndex"
+            class="grid grid-cols-1 gap-2 items-center border border-gray-100 p-3 rounded-lg bg-white"
+          >
+
+            <!-- Activity Type Selector -->
+            <UModal>
+              <UButton
+                color="neutral"
+                variant="subtle"
+                size="xs"
+                icon="i-heroicons-clipboard-document-list"
+                :label="item.type || 'Select Activity'"
               />
 
-              <div class="text-xs text-gray-600 truncate">
-                <p v-if="day.items[itemIndex]!.lat && day.items[itemIndex]!.lng">
-                  📍 {{ day.items[itemIndex]!.lat }},
-                  {{ day.items[itemIndex]!.lng }}
-                </p>
-                <p v-else class="italic text-gray-400">
-                  No location selected
-                </p>
-              </div>
+              <template #content>
+                <div class="p-6">
+                  <h2 class="text-lg font-semibold mb-4">Select Activity Type</h2>
 
-              <UButton
-                color="primary"
-                variant="soft"
-                size="xs"
-                icon="i-heroicons-map-pin"
-                @click="selectActivity(dayIndex, itemIndex)"
-              >
-                Pick on Map
-              </UButton>
-            </div>
+                  <div class="flex flex-wrap gap-2">
+                    <UButton
+                      v-for="(type, i) in activityTypes"
+                      :key="i"
+                      :label="type"
+                      color="neutral"
+                      variant="soft"
+                      size="sm"
+                      :class="{
+                        'bg-blue-100 text-blue-700 border border-blue-500': item.type === type,
+                      }"
+                      @click="() => {
+                        day.items[itemIndex]!.type = type
+                      }"
+                    />
+                  </div>
+                </div>
+              </template>
+            </UModal>
+
+
+
+
+            <UButton
+              color="primary"
+              variant="soft"
+              size="xs"
+              icon="i-heroicons-map-pin"
+              @click="selectActivity(dayIndex, itemIndex)"
+            >
+              {{ day.items[itemIndex]!.lat && day.items[itemIndex]!.lng ? 'Update Location' : 'Pick on Map' }}
+            </UButton>
+          </div>
 
             <!-- Add Activity -->
             <UButton
@@ -77,6 +102,8 @@
               Add Activity
             </UButton>
           </div>
+
+          
 
           <!-- Add Day -->
           <UButton
@@ -91,8 +118,9 @@
 
         <!-- Submit -->
         <UButton type="submit" color="primary" block>
-          Create Trip
+          {{ isEditMode ? 'Save Changes' : isRemixMode ? 'Create Trip' : 'Create Trip' }}
         </UButton>
+
       </UForm>
     </aside>
 
@@ -150,25 +178,7 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import { ref, reactive, computed } from 'vue'
 import { LMap, LTileLayer, LMarker, LPopup } from '@vue-leaflet/vue-leaflet'
 
-
-const activityTypes = [
-  'Hiking',
-  'Beach Visit',
-  'Museum Tour',
-  'Food Tasting',
-  'City Walk',
-  'Boat Ride',
-  'Wildlife Safari',
-  'Skiing',
-  'Cultural Experience',
-  'Historical Site',
-  'Shopping',
-  'Photography Spot',
-  'Local Market',
-  'Cooking Class',
-  'Scenic Drive',
-]
-
+const { data: activityTypes } = await useFetch('/data/activity-types.json')
 // --- Zod schema
 const schema = z.object({
   activities: z.array(
@@ -290,16 +300,20 @@ async function reverseGeocode(lat: number, lng: number): Promise<{ city: string;
 
 // --- Submit
 async function onSubmit(event: FormSubmitEvent<Schema>) {
+
+  
   const form = event.data
 
   // Flatten activities
-  const formattedActivities = form.activities.flatMap(day =>
-    day.items.map(item => ({
+  const formattedActivities = form.activities.map(day => ({
+    items: day.items.map(item => ({
       name: item.type,
       lat: item.lat,
       lng: item.lng,
-    }))
-  )
+    })),
+  }))
+
+
 
   // Get unique themes (first activity type per day)
   const themes = Array.from(
@@ -312,7 +326,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   let locationCity = 'Unknown Region'
   let locationCountry = 'Unknown Country'
 
-  const firstWithCoords = formattedActivities.find(a => a.lat && a.lng)
+  const firstWithCoords = form.activities
+  .flatMap(day => day.items)
+    .find(i => i.lat && i.lng)
+  
   if (firstWithCoords) {
     const result = await reverseGeocode(firstWithCoords.lat!, firstWithCoords.lng!)
     locationCity = result.city
@@ -328,8 +345,38 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     title = `${totalDays}-${plural} ${mainTheme} Trip to ${locationCity}`
   }
 
-  // Insert into Supabase
-  const { error } = await supabase.from('trips').insert({
+  if (isEditMode.value && editingTripId.value) {
+  const { error } = await supabase
+    .from('trips')
+    .update({
+      title,
+      location: locationCountry,
+      themes,
+      activities: formattedActivities,
+    })
+    .eq('id', editingTripId.value)
+
+  if (error) {
+    console.error(error)
+    toast.add({
+      title: 'Error Updating Trip',
+      description: 'There was a problem saving your changes.',
+      color: 'primary',
+    })
+  } else {
+    toast.add({
+      title: 'Trip Updated!',
+      description: 'Your changes have been saved successfully.',
+      color: 'primary',
+    })
+   
+  }
+    navigateTo(`/trip/${editingTripId.value}`)
+    return
+  }
+
+
+  const { data, error } = await supabase.from('trips').insert({
     title: title,
     location: locationCountry,
     themes,
@@ -337,7 +384,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     saved: true,
     saves_count: 1,
     owner_id: user.value?.id ?? user.value?.sub,
-  } as any)
+  } as any).select().single()
 
   if (error) {
     console.error(error)
@@ -354,8 +401,59 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     })
     state.region = ''
     state.activities = [{ items: [{ type: '', lat: undefined, lng: undefined }] }]
+
+    navigateTo(`/trip/${data.public_id}`)
   }
 }
+
+
+import { useTripStore } from '~/stores/tripstore'
+const tripStore = useTripStore()
+const isEditMode = ref(false)
+const isRemixMode = ref(false)
+const editingTripId = ref<string | null>(null)
+
+onMounted(() => {
+  if (tripStore.remixTrip) {
+    const remix = tripStore.remixTrip
+    isRemixMode.value = true
+    state.activities = remix.activities
+      ? remix.activities.reduce((days: any[], activity: any, index: number) => {
+          const dayIndex = Math.floor(index / 3)
+          if (!days[dayIndex]) {
+            days[dayIndex] = { items: [] }
+          }
+          days[dayIndex].items.push({
+            type: activity.name,
+            lat: activity.lat,
+            lng: activity.lng,
+          })
+          return days
+        }, [])
+      : [{ items: [{ type: '', lat: undefined, lng: undefined }] }]
+    tripStore.clearRemixTrip()
+  } else if (tripStore.editTrip) {
+    const edit = tripStore.editTrip
+    isEditMode.value = true
+    editingTripId.value = edit.id
+    state.activities = edit.activities
+      ? edit.activities.reduce((days: any[], activity: any, index: number) => {
+          const dayIndex = Math.floor(index / 3)
+          if (!days[dayIndex]) {
+            days[dayIndex] = { items: [] }
+          }
+          days[dayIndex].items.push({
+            type: activity.name,
+            lat: activity.lat,
+            lng: activity.lng,
+          })
+          return days
+        }, [])
+      : [{ items: [{ type: '', lat: undefined, lng: undefined }] }]
+    tripStore.clearEditTrip()
+  }
+
+})
 </script>
 
 

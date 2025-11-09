@@ -6,7 +6,8 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     '@nuxt/icon',
     '@nuxtjs/supabase',
-    '@nuxtjs/leaflet'
+    '@nuxtjs/leaflet',
+    '@pinia/nuxt'
   ],
   supabase: {
     redirect: false

@@ -38,11 +38,44 @@
           </div>
         </div>
 
+        <!-- Remix Button -->
+        <div class="p-4 border-t border-gray-200 bg-white">
+          <UButton
+            v-if="user?.id !== trip?.owner_id && user?.sub !== trip?.owner_id"
+            color="primary"
+            block
+            icon="i-heroicons-sparkles"
+            @click="remixTrip"
+          >
+            Remix This Trip
+          </UButton>
+
+          <UButton
+            v-if="user?.id === trip?.owner_id || user?.sub === trip?.owner_id"
+            color="neutral"
+            block
+            icon="i-heroicons-pencil-square"
+            @click="editTrip"
+            >
+            Edit This Trip
+          </UButton>
+        </div>
+
         <!-- Activities -->
         <div class="flex-1 px-6 py-5 space-y-3 overflow-y-auto">
+
           <div v-if="trip.activities?.length">
-            <div
-              v-for="(activity, i) in trip.activities"
+          <div 
+            v-for="(day, dayIndex) in trip.activities" 
+            :key="dayIndex"
+            class="mt-4"
+          >
+            <h3 class="font-semibold text-gray-700 mb-2">
+              Day {{ dayIndex + 1 }}
+            </h3>
+
+            <div 
+              v-for="(activity, i) in day.items" 
               :key="i"
               class="my-2 border border-gray-100 rounded-lg p-3 hover:bg-blue-50 hover:border-blue-200 transition cursor-pointer"
               @click="focusActivity(activity)"
@@ -52,6 +85,9 @@
               </p>
             </div>
           </div>
+        </div>
+
+
           <p
             v-else
             class="text-gray-500 text-sm italic text-center py-10"
@@ -97,7 +133,11 @@
 import { getTripImage } from '~/utils/getTripImage'
 import { ref } from 'vue'
 import { useSupabaseClient } from '#imports'
+import { useSupabaseUser } from '#imports'
 import { useRoute } from 'vue-router'
+
+
+const user = useSupabaseUser()
 
 type Activity = {
   name: string
@@ -105,13 +145,18 @@ type Activity = {
   lng?: number
 }
 
+type Day = {
+  items: Activity[]
+}
+
+
 type Trip = {
   id: string
   public_id: string
   title: string
   location: string
   themes: string[]
-  activities?: Activity[]
+  activities?: Day[]
   saves_count: number
   image?: string
 }
@@ -119,7 +164,7 @@ type Trip = {
 const route = useRoute()
 const supabase = useSupabaseClient()
 const mapRef = ref()
-const mapCenter = ref<[number, number]>([64.9631, -19.0208]) // Default center 
+let mapCenter = ref<[number, number]>([64.9631, -19.0208]) // Default center 
 
 
 function focusActivity(activity: Activity) {
@@ -138,7 +183,7 @@ const { data: trip } = await useAsyncData('trip', async () => {
   if (error) throw error
   if (!data) return null
 
-  let activities: Activity[] = []
+  let activities: Day[] = []
 
   try {
     const raw =
@@ -155,6 +200,17 @@ const { data: trip } = await useAsyncData('trip', async () => {
     console.warn('Failed to parse activities:', e)
   }
 
+
+  const first = activities
+  .flatMap(day => day.items)
+    .find(a => a.lat && a.lng)
+    
+
+
+  if (first) {
+      mapCenter.value = [first.lat!, first.lng!]
+  } 
+  
   return {
     ...data,
     activities,
@@ -162,20 +218,31 @@ const { data: trip } = await useAsyncData('trip', async () => {
   }
 })
 
-const markers = computed<
-  { name: string; lat: number; lng: number }[]
->(() => {
+const markers = computed(() => {
   if (!trip.value?.activities) return []
 
-  const flat = Array.isArray(trip.value.activities[0])
-    ? (trip.value.activities as Activity[][]).flat()
-    : (trip.value.activities as Activity[])
-
+  const flat = trip.value.activities.flatMap((day: Day) => day.items)
   return flat.filter(
-    (a): a is { name: string; lat: number; lng: number } =>
-      typeof a.lat === 'number' && typeof a.lng === 'number'
+  (a: Activity) => typeof a.lat === 'number' && typeof a.lng === 'number'
   )
+
 })
 
+
+const tripStore = useTripStore()
+
+function remixTrip() {
+  if (trip.value) {
+    tripStore.setRemixTrip(trip.value)
+    navigateTo('/create-trip')
+  }
+}
+
+function editTrip() {
+  if (trip.value) {
+    tripStore.setEditTrip(trip.value)
+    navigateTo(`/create-trip/?edit=true`)
+  }
+}
 
 </script>

@@ -20,7 +20,7 @@ const items: NavigationMenuItem[][] = [[
   {
     label: 'My Trips',
     icon: 'i-lucide-map',
-    to: '/trips'
+    to: '/saved'
   },
   {
     label: 'Create Trip',
@@ -36,23 +36,15 @@ const items: NavigationMenuItem[][] = [[
       <!-- Sidebar -->
       <UDashboardSidebar
         v-if="user"
-        collapsible
-        resizable
         :ui="{ footer: 'border-t border-default' }"
       >
         <!-- Header -->
         <template #header="{ collapsed }">
           <div
-            class="flex items-center gap-2 cursor-pointer"
+            class="flex items-center gap-2 cursor-pointer justify-center"
             @click="router.push('/')"
           >
-            <Logo v-if="!collapsed" class="h-6 w-auto shrink-0" />
-            <UIcon
-              v-else
-              name="i-lucide-map"
-              class="size-5 text-primary mx-auto"
-            />
-            <span v-if="!collapsed" class="font-semibold text-lg">TripBoard</span>
+            <span v-if="!collapsed" class="font-semibold text-lg justify-center">TripBoard</span>
           </div>
         </template>
 

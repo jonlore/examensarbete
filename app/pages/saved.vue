@@ -22,20 +22,26 @@
     </div>
 
     <!-- Saved Trips Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      <TripCard
-        v-for="(trip, index) in savedTrips"
-        :key="index"
-        :trip="trip"
-      />
+    <div class="max-w-7xl mx-auto">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        <TripCard
+          v-for="(trip, index) in savedTrips"
+          :key="index"
+          :trip="trip"
+        />
 
-      <div
-        v-if="!savedTrips.length"
-        class="col-span-full text-center text-gray-500 py-12"
-      >
-        <p>You haven’t saved any trips yet.</p>
+        <!-- Empty state -->
+        <div
+          v-if="!savedTrips.length"
+          class="col-span-full text-center text-gray-500 py-12"
+        >
+          <p>You haven’t saved any trips yet.</p>
+        </div>
+
       </div>
     </div>
+
   </div>
 </template>
 

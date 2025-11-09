@@ -2,13 +2,22 @@
 import { ref} from 'vue'
 
 const supabase = useSupabaseClient()
-
+const user = useSupabaseUser()
 const mode = ref<'in' | 'up'>('in')
 const email = ref('')
 const password = ref('')
 
+definePageMeta({
+  layout: "auth"
+})
+
+watch(user, (val) => {
+  if (val) navigateTo('/explore')
+})
 
 const toast = useToast?.()
+
+
 
 const signIn = async () => {
   const { error } = await supabase.auth.signInWithPassword({

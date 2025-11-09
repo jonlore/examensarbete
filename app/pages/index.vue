@@ -3,95 +3,157 @@ definePageMeta({
   layout: 'default'
 })
 
-
 const featured = [
   {
     title: 'Bali, Indonesia',
-    image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=2000'
+    description: 'Tropical paradise with pristine beaches and rich culture',
+    image: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&q=80&w=2048',
+    tag: 'Trending'
   },
   {
     title: 'Kyoto, Japan',
-    image: 'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?auto=format&fit=crop&q=80&w=1966'
+    description: 'Ancient temples amid modern innovation',
+    image: 'https://images.unsplash.com/photo-1545569341-9eb8b30979d9?auto=format&fit=crop&q=80&w=2048',
+    tag: 'Cultural'
   },
   {
-    title: 'Tuscany, Italy',
-    image: 'https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?auto=format&fit=crop&q=80&w=2000'
+    title: 'Santorini, Greece',
+    description: 'Iconic white buildings and Mediterranean charm',
+    image: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&q=80&w=2048',
+    tag: 'Popular'
   }
 ]
 
-
+const stats = [
+  { number: '10K+', label: 'Travelers' },
+  { number: '50+', label: 'Countries' },
+  { number: '1000+', label: 'Shared Trips' }
+]
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col">
+  <div class="min-h-screen">
+    <!-- Hero Section with Parallax -->
+    <section class="relative h-screen flex items-center justify-center overflow-hidden">
+      <!-- Parallax Background -->
+      <div 
+        class="absolute inset-0 bg-cover bg-center transform scale-110 transition-transform duration-1000"
+        style="background-image: url('https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&w=2048');"
+      ></div>
+      
+      <!-- Overlay with blur -->
+      <div class="absolute inset-0 bg-black/40 "></div>
 
-    <!-- Hero Section -->
-    <section
-      class="relative flex flex-col items-center justify-center text-center text-white bg-cover bg-center h-[80vh]"
-      style="background-image: url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=2000');"
-    >
-      <div class="absolute inset-0 bg-opacity-50"></div>
-
-      <div class="relative z-10 max-w-2xl px-4">
-        <h1 class="text-5xl font-bold mb-4">Share & Discover Amazing Trips</h1>
-        <p class="text-lg text-gray-200 mb-6">
-          Join a global community of travelers. Create, share, and explore curated itineraries from around the world.
+      <!-- Content -->
+      <div class="relative z-10 max-w-4xl mx-auto px-6 text-center text-white">
+        <h1 class="text-6xl font-bold mb-6 leading-tight animate-fade-in">
+          Your Journey,
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+            Shared
+          </span>
+        </h1>
+        <p class="text-xl mb-8 text-gray-100 max-w-2xl mx-auto leading-relaxed">
+          Create, discover, and share extraordinary travel experiences with passionate explorers worldwide.
         </p>
-        <nuxt-link
-          to="/explore"
-          class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full text-lg font-medium shadow-md transition"
-        >
-          Explore Trips
-        </nuxt-link>
-      </div>
-    </section>
-
-    <!-- How It Works -->
-    <section class="py-16 bg-gray-50 text-center px-6">
-      <h2 class="text-3xl font-semibold mb-8">How It Works</h2>
-
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-5xl mx-auto">
-        <div class="bg-white p-6 rounded-2xl shadow-md">
-          <h3 class="text-xl font-semibold mb-2">1. Create</h3>
-          <p class="text-gray-600">Build and share your own custom travel itineraries with beautiful photos and maps.</p>
+        
+        <!-- CTA Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <nuxt-link
+            to="/explore"
+            class="inline-flex items-center px-8 py-4 rounded-full bg-white text-gray-900 hover:bg-gray-100 transition-all duration-300 font-medium text-lg group"
+          >
+            Explore Trips
+            <span class="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+          </nuxt-link>
+          <nuxt-link
+            to="/create-trip"
+            class="inline-flex items-center px-8 py-4 rounded-full bg-white/10 text-white hover:bg-white/20 transition-all duration-300 backdrop-blur-sm font-medium text-lg"
+          >
+            Share Your Trip
+          </nuxt-link>
         </div>
-        <div class="bg-white p-6 rounded-2xl shadow-md">
-          <h3 class="text-xl font-semibold mb-2">2. Discover</h3>
-          <p class="text-gray-600">Browse trips from travelers worldwide and find inspiration for your next adventure.</p>
-        </div>
-        <div class="bg-white p-6 rounded-2xl shadow-md">
-          <h3 class="text-xl font-semibold mb-2">3. Connect</h3>
-          <p class="text-gray-600">Follow fellow explorers, comment on trips, and build your travel network.</p>
-        </div>
-      </div>
-    </section>
 
-    <!-- Featured Destinations -->
-    <section class="py-16 text-center bg-gradient-to-b from-white to-gray-50">
-      <h2 class="text-3xl font-semibold mb-8">Featured Destinations</h2>
-
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-5xl mx-auto px-6">
-        <div
-          v-for="(item, i) in featured"
-          :key="i"
-          class="relative rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition transform hover:scale-[1.02]"
-        >
-          <img :src="item.image" :alt="item.title" class="w-full h-56 object-cover" />
-          <div class="absolute inset-0 bg-opacity-40 flex items-center justify-center">
-            <h3 class="text-white text-xl font-semibold">{{ item.title }}</h3>
+        <!-- Stats -->
+        <div class="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
+          <div v-for="(stat, i) in stats" :key="i" class="text-center">
+            <div class="text-3xl font-bold mb-1">{{ stat.number }}</div>
+            <div class="text-sm text-gray-300">{{ stat.label }}</div>
           </div>
         </div>
       </div>
 
-      <div class="mt-10">
-        <nuxt-link
-          to="/explore"
-          class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full text-lg font-medium shadow-md transition"
-        >
-          View All Trips
-        </nuxt-link>
+      <!-- Scroll Indicator -->
+      <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+        </svg>
       </div>
     </section>
 
+    <!-- Featured Destinations -->
+    <section class="py-24 bg-white">
+      <div class="max-w-7xl mx-auto px-6">
+        <h2 class="text-4xl font-bold mb-16 text-center">
+          Featured Destinations
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div
+            v-for="(item, i) in featured"
+            :key="i"
+            class="group relative rounded-xl overflow-hidden hover:shadow-2xl transition-all duration-500"
+          >
+            <!-- Background Image -->
+            <div class="aspect-[4/5] overflow-hidden">
+              <img 
+                :src="item.image" 
+                :alt="item.title"
+                class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
+            </div>
+
+            <!-- Content Overlay -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent p-6 flex flex-col justify-end text-white transform transition-transform duration-500">
+              <!-- Tag -->
+              <span class="inline-block px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-sm mb-3 self-start">
+                {{ item.tag }}
+              </span>
+              
+              <!-- Title & Description -->
+              <h3 class="text-2xl font-bold mb-2">{{ item.title }}</h3>
+              <p class="text-gray-200 text-sm">{{ item.description }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- View All Button -->
+        <div class="text-center mt-16">
+          <nuxt-link
+            to="/explore"
+            class="inline-flex items-center px-8 py-4 rounded-full bg-gray-900 text-white hover:bg-gray-800 transition-all duration-300 font-medium text-lg group"
+          >
+            View All Destinations
+            <span class="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+          </nuxt-link>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
+
+<style scoped>
+.animate-fade-in {
+  animation: fadeIn 1s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>
