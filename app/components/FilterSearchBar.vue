@@ -51,7 +51,6 @@
         class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-full shadow-sm transition text-sm focus:ring-2 focus:ring-blue-500"
       >
         <option value="created_at.desc">Newest</option>
-        <option value="saves_count.desc">Most Saved</option>
         <option value="title.asc">A–Z</option>
       </select>
     </div>

@@ -346,7 +346,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   }
 
   if (isEditMode.value && editingTripId.value) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('trips')
     .update({
       title,
@@ -355,6 +355,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       activities: formattedActivities,
     })
     .eq('id', editingTripId.value)
+    .select()
+    .single()
 
   if (error) {
     console.error(error)
@@ -371,7 +373,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     })
    
   }
-    navigateTo(`/trip/${editingTripId.value}`)
+    navigateTo(`/trip/${data.public_id}`)
     return
   }
 
@@ -381,8 +383,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     location: locationCountry,
     themes,
     activities: formattedActivities,
-    saved: true,
-    saves_count: 1,
+    saved: false,
+    saves_count: 0,
     owner_id: user.value?.id ?? user.value?.sub,
   } as any).select().single()
 
@@ -401,8 +403,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     })
     state.region = ''
     state.activities = [{ items: [{ type: '', lat: undefined, lng: undefined }] }]
-
     navigateTo(`/trip/${data.public_id}`)
+    return
   }
 }
 
@@ -417,39 +419,25 @@ onMounted(() => {
   if (tripStore.remixTrip) {
     const remix = tripStore.remixTrip
     isRemixMode.value = true
-    state.activities = remix.activities
-      ? remix.activities.reduce((days: any[], activity: any, index: number) => {
-          const dayIndex = Math.floor(index / 3)
-          if (!days[dayIndex]) {
-            days[dayIndex] = { items: [] }
-          }
-          days[dayIndex].items.push({
-            type: activity.name,
-            lat: activity.lat,
-            lng: activity.lng,
-          })
-          return days
-        }, [])
-      : [{ items: [{ type: '', lat: undefined, lng: undefined }] }]
+    state.activities = remix.activities.map((day: any) => ({
+      items: day.items.map((item: any) => ({
+      type: item.name,
+      lat: item.lat,
+      lng: item.lng
+    }))
+  }))
     tripStore.clearRemixTrip()
   } else if (tripStore.editTrip) {
     const edit = tripStore.editTrip
     isEditMode.value = true
     editingTripId.value = edit.id
-    state.activities = edit.activities
-      ? edit.activities.reduce((days: any[], activity: any, index: number) => {
-          const dayIndex = Math.floor(index / 3)
-          if (!days[dayIndex]) {
-            days[dayIndex] = { items: [] }
-          }
-          days[dayIndex].items.push({
-            type: activity.name,
-            lat: activity.lat,
-            lng: activity.lng,
-          })
-          return days
-        }, [])
-      : [{ items: [{ type: '', lat: undefined, lng: undefined }] }]
+    state.activities = edit.activities.map((day: any) => ({
+      items: day.items.map((item: any) => ({
+      type: item.name,
+      lat: item.lat,
+      lng: item.lng
+    }))
+}))
     tripStore.clearEditTrip()
   }
 

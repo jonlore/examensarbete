@@ -27,7 +27,6 @@
           :name="trip.saved ? 'i-lucide-bookmark-x' : 'i-lucide-bookmark-check'"
           class="w-5 h-5 "
         />
-        <span class="text-xs font-medium ml-1">{{ trip.savesCount }}</span>
       </button>
 
       <!-- Themes Badge (bottom) -->
@@ -96,7 +95,7 @@ type Trip = {
 }
 
 const props = defineProps<{ trip: Trip }>()
-const emit = defineEmits(['deleted']) // 👈 emit when deleted
+const emit = defineEmits(['deleted', 'saved-changed']) 
 
 const router = useRouter()
 const supabase = useSupabaseClient()
@@ -135,8 +134,8 @@ const toggleSave = async () => {
       return
     }
 
-    props.trip.saved = false
-    props.trip.savesCount -= 1
+    emit('saved-changed', { id: props.trip.id, saved: false })
+
   } else {
     const { error } = await supabase
       .from('trip_saves')
@@ -148,8 +147,7 @@ const toggleSave = async () => {
       return
     }
 
-    props.trip.saved = true
-    props.trip.savesCount += 1
+    emit('saved-changed', {id: props.trip.id, saved: true })
   }
 }
 

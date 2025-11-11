@@ -93,4 +93,5 @@ const { data: savedTrips } = await useAsyncData('saved-trips', async () => {
 
   return trips
 }, { default: () => [] })
+
 </script>
