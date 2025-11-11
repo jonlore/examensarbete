@@ -128,6 +128,9 @@ const toggleSave = async () => {
       .eq('trip_id', tripId)
       .eq('user_id', user.value.sub)
 
+    toast.add({ title: 'Removed Saved trip', color: 'primary' })
+    router.go(0)
+      
     if (error) {
       console.error('Error unsaving trip:', error)
       toast.add({ title: 'Error removing trip.', color: 'primary' })
