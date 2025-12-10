@@ -58,6 +58,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed, watch } from 'vue'
 import { debounce } from '~/utils/debounce'
 
 const props = defineProps<{
@@ -67,8 +68,14 @@ const props = defineProps<{
   categories: string[]
 }>()
 
-const emits = defineEmits(['update:searchQuery', 'update:selectedCategory', 'update:sortBy', 'search'])
+const emits = defineEmits([
+  'update:searchQuery',
+  'update:selectedCategory',
+  'update:sortBy',
+  'search',
+])
 
+// Reactive computed bindings
 const searchQuery = computed({
   get: () => props.searchQuery,
   set: val => emits('update:searchQuery', val),
@@ -82,7 +89,26 @@ const sortBy = computed({
   set: val => emits('update:sortBy', val),
 })
 
+const categories = props.categories
+
+// Debounced search function
 const debouncedSearch = debounce(() => emits('search'), 400)
 const resetAndLoad = () => emits('search')
-const categories = props.categories
+
+// Watch the search input for category matches
+watch(searchQuery, (val) => {
+  const trimmed = val.toLowerCase().trim()
+  const matchingCategory = categories.find(
+    (cat) => cat.toLowerCase() === trimmed
+  )
+
+  if (matchingCategory) {
+    selectedCategory.value = matchingCategory
+  } else {
+    selectedCategory.value = ''
+  }
+
+  // Trigger search
+  debouncedSearch()
+})
 </script>

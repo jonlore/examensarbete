@@ -11,7 +11,7 @@
     <!-- Trip Cards -->
     <div class="p-6 bg-gray-50 max-w-7xl mx-auto">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <TripCard v-for="(item, index) in trips" :key="index" @saved-changed="updateSavedState" :trip="item" />
+        <TripCard v-for="(item, index) in trips" :key="index" @saved-changed="updateSavedState" @theme-clicked="onThemeClicked" :trip="item" />
       </div>
     </div>  
 
@@ -49,6 +49,11 @@ function updateSavedState({ id, saved }: { id: string, saved: boolean }) {
   }
 }
 
+function onThemeClicked(theme: string) {
+  searchQuery.value = theme
+  selectedCategory.value = theme
+  resetAndLoad()
+}
 
 const { target: scrollTarget } = useInfiniteScroll(loadTrips)
 

@@ -36,7 +36,8 @@
         <span
           v-for="(theme, index) in trip.themes"
           :key="index"
-          class="bg-primary text-white text-xs px-2 py-0.5 rounded-full shadow-sm"
+          class="bg-primary text-white text-xs px-2 py-0.5 rounded-full shadow-sm hover:cursor-pointer hover:bg-secondary transition"
+          @click="$emit('theme-clicked', theme)"
         >
           {{ theme }}
         </span>
@@ -105,7 +106,7 @@ type Trip = {
 }
 
 const props = defineProps<{ trip: Trip }>()
-const emit = defineEmits(['deleted', 'saved-changed']) 
+const emit = defineEmits(['deleted', 'saved-changed', 'theme-clicked']) 
 
 const router = useRouter()
 const supabase = useSupabaseClient()
