@@ -59,6 +59,18 @@
             >
             Edit This Trip
           </UButton>
+
+            <!-- Share Button -->
+          <UButton
+            v-if="trip"
+            color="primary"
+            variant="outline"
+            block
+            icon="i-lucide-share-2"
+            @click="shareTrip"
+          >
+            Share Trip
+          </UButton>
         </div>
 
         <!-- Activities -->
@@ -135,6 +147,7 @@ import { ref } from 'vue'
 import { useSupabaseClient } from '#imports'
 import { useSupabaseUser } from '#imports'
 import { useRoute } from 'vue-router'
+const toast = useToast()
 
 
 const user = useSupabaseUser()
@@ -242,6 +255,28 @@ function editTrip() {
   if (trip.value) {
     tripStore.setEditTrip(trip.value)
     navigateTo(`/create-trip/?edit=true`)
+  }
+}
+
+const shareTrip = async () => {
+  if (!trip.value) return
+
+  try {
+    const shareUrl = `${window.location.origin}/trips/${trip.value.public_id}`
+    await navigator.clipboard.writeText(shareUrl)
+    // Optional: toast notification
+    toast.add({
+      title: 'Link copied!',
+      description: 'Trip link has been copied to clipboard.',
+      color: 'primary',
+    })
+  } catch (err) {
+    console.error('Error copying link:', err)
+    toast.add({
+      title: 'Failed to copy link',
+      description: 'Please try manually.',
+      color: 'primary',
+    })
   }
 }
 
