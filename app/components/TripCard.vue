@@ -61,6 +61,16 @@
           Explore Trip
         </UButton>
 
+        <UButton
+          @click="shareTrip"
+          color="primary"
+          variant="outline"
+          size="sm"
+          icon="i-lucide-share-2"
+        >
+          Share
+        </UButton>
+
         <!-- Delete button (only owner) -->
         <UButton
           v-if="isOwner"
@@ -154,6 +164,24 @@ const toggleSave = async () => {
   }
 }
 
+const shareTrip = async () => {
+  try {
+    const shareUrl = `${window.location.origin}${props.trip.link}`
+    await navigator.clipboard.writeText(shareUrl)
+    toast.add({
+      title: 'Link copied!',
+      description: 'Trip link has been copied to clipboard.',
+      color: 'primary',
+    })
+  } catch (err) {
+    console.error('Error copying link:', err)
+    toast.add({
+      title: 'Failed to copy link',
+      description: 'Please try manually.',
+      color: 'primary',
+    })
+  }
+}
 
 async function deleteTrip() {
   if (!isOwner.value) return

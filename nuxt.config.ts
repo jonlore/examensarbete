@@ -10,7 +10,9 @@ export default defineNuxtConfig({
     '@pinia/nuxt'
   ],
   supabase: {
-    redirect: false
+    redirect: false,
+    url: process.env.SUPABASE_URL,
+    key: process.env.SUPABASE_PUBLISHABLE_KEY
   },
   css: ['~/assets/css/main.css']
 })
